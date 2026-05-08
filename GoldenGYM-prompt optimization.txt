@@ -1,0 +1,442 @@
+# GoldenGYM 健身打卡系统 — 优化版提示词
+
+-----
+
+## 一、项目概述
+
+**项目名称**：GoldenGYM 健身打卡系统（健身打卡助手）
+**定位**：面向个人用户的运动打卡与目标管理 Web 应用，前后端分离架构，支持运动记录、统计分析、目标设定与日历可视化。
+
+-----
+
+## 二、技术栈
+
+### 前端
+
+- HTML5 + CSS3 + Vue 3（Composition API）+ Element Plus
+- 路由：Vue Router 4
+- 状态管理：Pinia（或 Vuex 4）
+- HTTP 请求：Axios（统一封装，含拦截器）
+- 构建工具：Vite
+
+### 后端
+
+- Java 1.8 + Spring Boot 2.x
+- 架构模式：四层架构（Controller → Service 接口 → ServiceImpl → DAO/Repository）
+- ORM：MyBatis-Plus（推荐）或 Spring Data JPA
+- 数据库：MySQL 8.x
+- 接口风格：RESTful API，统一响应体封装（code / message / data）
+- 跨域处理：Spring 全局 CORS 配置
+- 参数校验：javax.validation（@NotNull、@Min 等注解）
+
+-----
+
+## 三、数据库设计
+
+### 3.1 用户表 `user`
+
+```sql
+CREATE TABLE user (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username    VARCHAR(50)  NOT NULL UNIQUE COMMENT '用户名',
+    password    VARCHAR(100) NOT NULL COMMENT '密码（建议BCrypt加密）',
+    email       VARCHAR(100) COMMENT '邮箱',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间'
+);
+```
+
+### 3.2 运动记录表 `exercise_record`
+
+```sql
+CREATE TABLE exercise_record (
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id        BIGINT NOT NULL COMMENT '关联用户ID',
+    type           ENUM('有氧运动','力量训练','功能性训练') NOT NULL COMMENT '运动类型',
+    date           DATE NOT NULL COMMENT '运动日期',
+    duration       INT  NOT NULL COMMENT '运动时长（分钟）',
+    calories       INT  COMMENT '消耗卡路里（kcal）',
+    avg_heart_rate INT  COMMENT '平均心率（bpm）',
+    note           VARCHAR(255) COMMENT '备注（可选）',
+    create_time    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
+```
+
+### 3.3 目标表 `exercise_goal`
+
+```sql
+CREATE TABLE exercise_goal (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id         BIGINT NOT NULL COMMENT '关联用户ID',
+    period          ENUM('每日','每周','每月') NOT NULL COMMENT '目标周期',
+    target_days     INT  COMMENT '目标天数',
+    target_duration INT  COMMENT '目标总时长（分钟）',
+    target_calories INT  COMMENT '目标总卡路里',
+    completed       BOOLEAN DEFAULT FALSE COMMENT '是否完成',
+    create_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
+```
+
+-----
+
+## 四、后端架构设计（四层）
+
+### 4.1 统一响应体
+
+```java
+// Result.java
+public class Result<T> {
+    private Integer code;    // 200=成功，其他=失败
+    private String  message;
+    private T       data;
+    // 静态工厂方法 success / fail
+}
+```
+
+### 4.2 Controller 层
+
+- `ExerciseController`：处理运动记录的 CRUD 请求及统计查询
+- `GoalController`：处理目标的创建、列表、完成状态切换
+
+```java
+// 示例接口
+@RestController
+@RequestMapping("/api/exercise")
+public class ExerciseController {
+    @PostMapping("/record")          // 新增打卡记录
+    @GetMapping("/records")          // 分页查询历史记录
+    @GetMapping("/stats/week")       // 本周统计
+    @GetMapping("/stats/month")      // 本月统计
+    @GetMapping("/calendar/{year}/{month}") // 日历数据（返回有记录的日期列表）
+    @GetMapping("/records/{date}")   // 查询某天的详细记录
+    @DeleteMapping("/record/{id}")   // 删除记录
+}
+
+@RestController
+@RequestMapping("/api/goal")
+public class GoalController {
+    @PostMapping("/create")          // 创建目标
+    @GetMapping("/list")             // 目标列表
+    @PutMapping("/{id}/complete")    // 切换完成状态
+    @DeleteMapping("/{id}")          // 删除目标
+}
+```
+
+### 4.3 Service 层接口
+
+```java
+public interface ExerciseService {
+    Result<Void>       addRecord(ExerciseRecordDTO dto);
+    Result<PageResult> getRecords(Long userId, Integer page, Integer size);
+    Result<StatsVO>    getWeekStats(Long userId);
+    Result<StatsVO>    getMonthStats(Long userId);
+    Result<List<String>> getCalendarDates(Long userId, int year, int month);
+    Result<List<ExerciseRecordVO>> getRecordsByDate(Long userId, String date);
+}
+
+public interface GoalService {
+    Result<Void>           createGoal(GoalDTO dto);
+    Result<List<GoalVO>>   listGoals(Long userId);
+    Result<Void>           toggleComplete(Long id);
+}
+```
+
+### 4.4 ServiceImpl 层
+
+- 调用 DAO/Mapper 完成业务逻辑
+- 统计接口需使用 SQL 聚合查询（SUM、COUNT、GROUP BY date）
+
+### 4.5 DAO/Repository 层
+
+- 使用 MyBatis-Plus 的 BaseMapper，复杂查询在 Mapper XML 中编写
+- 典型 SQL 示例（日历查询）：
+
+```sql
+SELECT DISTINCT date 
+FROM exercise_record 
+WHERE user_id = #{userId} 
+  AND YEAR(date) = #{year} 
+  AND MONTH(date) = #{month}
+```
+
+-----
+
+## 五、前端页面与组件设计
+
+### 5.1 视觉规范（基于截图确认）
+
+|元素  |规范                      |
+|----|------------------------|
+|主色  |橙色 #F4672A（按钮、激活态、数字高亮） |
+|辅助色 |绿色 #67C23A（统计数字、图标）     |
+|背景  |浅灰 #F5F5F5（页面背景）/ 白色（卡片）|
+|字体  |系统字体栈，中文优先              |
+|圆角  |卡片 12px，按钮 6px          |
+|导航栏 |白色背景，固定顶部，激活项橙色填充按钮     |
+|Logo|橙色圆形背景 + 心电波形图标 + 绿色文字  |
+
+### 5.2 目录结构
+
+```
+frontend/
+├── public/
+│   └── index.html
+├── src/
+│   ├── assets/              # 静态资源（图片、图标）
+│   ├── api/                 # Axios 接口封装
+│   │   ├── exercise.js      # 运动记录相关接口
+│   │   └── goal.js          # 目标相关接口
+│   ├── components/
+│   │   ├── Navbar.vue        # 顶部导航栏（固定，含 Logo + 导航项 + 主题切换）
+│   │   ├── StatCard.vue      # 统计数据卡片（数值 + 图标 + 副标题）
+│   │   ├── ExerciseCard.vue  # 运动记录卡片（类型标签 + 时长 + 卡路里 + 日期）
+│   │   └── GoalCard.vue      # 目标卡片（周期 + 目标值 + 完成勾选）
+│   ├── views/
+│   │   ├── Home.vue          # 首页
+│   │   ├── QuickCheck.vue    # 快速打卡
+│   │   ├── ExerciseHistory.vue # 运动历史
+│   │   ├── MyGoals.vue       # 我的目标
+│   │   └── Calendar.vue      # 运动日历
+│   ├── router/
+│   │   └── index.js
+│   ├── stores/               # Pinia store
+│   │   └── exercise.js
+│   └── App.vue
+├── main.js
+└── vite.config.js
+```
+
+### 5.3 各页面详细说明
+
+#### ① 首页（Home.vue）
+
+**布局**：顶部标题行（左：标题+副标题，右：快速打卡按钮）→ 3列统计卡片 → 最近运动列表
+
+**统计卡片（3个）**：
+
+- 本周运动：次数（橙色大字）+ 时长（分钟）+ 卡路里 + 日历图标
+- 本月运动：次数（绿色大字）+ 时长 + 卡路里 + 趋势图标
+- 活跃目标：未完成目标数（绿色）+ 引导文字 + 靶心图标
+
+**最近运动列表**：
+
+- 标题行右侧”查看全部”链接（跳转运动历史）
+- 无记录时：心电波图标 + “还没有运动记录” + “开始第一次打卡”按钮（橙色）
+- 有记录时：展示最近 5 条 ExerciseCard
+
+**API 调用**：`GET /api/exercise/stats/week`、`GET /api/exercise/stats/month`、`GET /api/goal/list`、`GET /api/exercise/records?page=1&size=5`
+
+-----
+
+#### ② 快速打卡（QuickCheck.vue）
+
+**布局**：标题 → 运动类型选择卡片 → 打卡表单卡片
+
+**运动类型选择**：
+
+- 3个切换按钮（Tab 样式）：有氧运动（心率波图标）/ 力量训练（哑铃图标）/ 功能性训练（心形图标）
+- 选中态：橙色描边 + 橙色文字；未选中：灰色边框
+- 底部空白区域：大号”+“图标 + “没有找到想要的运动类型？” + “未来版本将支持自定义运动类型”（灰色提示）
+
+**打卡表单**（选择运动类型后显示，使用 Element Plus Form）：
+
+```
+运动日期  [DatePicker，默认今天]
+运动时长  [InputNumber，单位：分钟，min=1]
+消耗卡路里 [InputNumber，单位：kcal，可选]
+平均心率  [InputNumber，单位：bpm，可选]
+备注      [Input textarea，可选]
+          [提交打卡] 橙色按钮
+```
+
+- 提交成功：Element Plus ElMessage 成功提示，表单重置，可选跳转首页
+
+**API 调用**：`POST /api/exercise/record`
+
+-----
+
+#### ③ 运动历史（ExerciseHistory.vue）
+
+**布局**：标题 → 3列统计卡片 → 运动记录列表
+
+**统计卡片**（3个，橙/绿交替高亮）：
+
+- 总运动次数（橙色，心电波图标）
+- 总运动时长（绿色，时钟图标）
+- 总消耗卡路里（绿色，火焰图标）
+
+**运动记录列表**：
+
+- 标题”运动记录”
+- 无记录：心电波图标 + “还没有运动记录” + “开始第一次打卡”橙色按钮（跳转快速打卡）
+- 有记录时：
+  - 支持筛选（按运动类型）
+  - 每条记录展示：类型标签（颜色区分）、日期、时长、卡路里、心率、操作（删除）
+  - 分页（Element Plus Pagination）
+
+**API 调用**：`GET /api/exercise/records`（含分页、类型筛选参数）
+
+-----
+
+#### ④ 我的目标（MyGoals.vue）
+
+**布局**：标题行（左：标题+副标题，右：+ 创建目标按钮）→ 目标列表
+
+**目标列表**：
+
+- 无目标时：靶心图标 + “还没有设置目标” + “创建第一个目标”橙色按钮
+- 有目标时：目标卡片列表（GoalCard），支持勾选完成
+
+**GoalCard 内容**：
+
+- 周期标签（每日/每周/每月）
+- 目标天数、目标时长、目标卡路里（有值才显示）
+- 右上角勾选框（已完成变灰并显示删除线）
+- 创建时间
+
+**创建目标弹窗（Dialog）**：
+
+```
+目标周期   [Select: 每日目标 / 每周目标 / 每月目标]
+目标天数   [InputNumber，可选，placeholder: 例如：5天]
+目标时长   [InputNumber，单位：分钟，可选，placeholder: 例如：150分钟]
+目标卡路里 [InputNumber，可选，placeholder: 例如：1000卡]
+           [创建目标] 橙色全宽按钮
+```
+
+- 弹窗右上角 ✕ 关闭
+
+**API 调用**：`GET /api/goal/list`、`POST /api/goal/create`、`PUT /api/goal/{id}/complete`、`DELETE /api/goal/{id}`
+
+-----
+
+#### ⑤ 运动日历（Calendar.vue）
+
+**布局**：左侧日历主体（约 2/3 宽）+ 右侧选中日期详情面板（约 1/3 宽）+ 底部图例
+
+**日历主体**：
+
+- 顶部：`yyyy年MM月` + 今天按钮（橙色）+ 上月/下月箭头按钮（橙色圆形）
+- 星期头部：一 二 三 四 五 六 日
+- 日期格子：
+  - 当天：橙色描边边框 + 橙色数字
+  - 有运动记录：淡绿色背景（#e8f5e9）
+  - 选中日期：橙色描边（类似当天，区分颜色）
+  - 周末（六/日）：蓝色数字
+  - 上/下月溢出日期：灰色
+- 点击日期：右侧面板更新
+
+**右侧详情面板**：
+
+- 标题”选择日期”（日历图标）
+- 未选中时：灰色日历图标 + “点击日历选择日期”
+- 选中后：显示该日期的运动记录列表（类型、时长、卡路里）；无记录显示”该日期暂无运动记录”
+
+**底部图例**：
+
+- □ 今天（橙色描边示例）
+- □ 有运动记录（淡绿色示例）
+- □ 选中日期（橙色描边示例）
+
+**API 调用**：
+
+- 切换月份时：`GET /api/exercise/calendar/{year}/{month}` 获取有记录的日期列表
+- 点击日期时：`GET /api/exercise/records/{date}` 获取当天记录
+
+-----
+
+### 5.4 Navbar.vue 规范
+
+```
+[Logo区域]  健身打卡助手          首页  快速打卡  运动历史  我的目标  运动日历     [主题切换☀/🌙]
+```
+
+- Logo：橙色圆形背景（32px）+ 白色心电波图标 + 右侧绿色粗体文字
+- 导航项：默认灰色文字，hover 橙色；激活项：橙色填充圆角按钮 + 白色文字
+- 主题切换按钮：右侧，点击切换深色/浅色模式（可选实现）
+- 固定顶部：`position: fixed; top: 0; z-index: 1000`，白色背景 + 底部细线阴影
+
+-----
+
+## 六、API 接口规范
+
+### 统一请求/响应格式
+
+```
+// 请求头
+Content-Type: application/json
+// 统一响应
+{ "code": 200, "message": "success", "data": { ... } }
+{ "code": 400, "message": "参数错误", "data": null }
+```
+
+### 完整接口列表
+
+|方法    |路径                                   |说明         |
+|------|-------------------------------------|-----------|
+|POST  |/api/exercise/record                 |新增打卡记录     |
+|GET   |/api/exercise/records                |分页查询记录（可筛选）|
+|DELETE|/api/exercise/record/{id}            |删除记录       |
+|GET   |/api/exercise/stats/week             |本周统计       |
+|GET   |/api/exercise/stats/month            |本月统计       |
+|GET   |/api/exercise/stats/total            |全部统计（历史页用） |
+|GET   |/api/exercise/calendar/{year}/{month}|日历有记录日期列表  |
+|GET   |/api/exercise/records/{date}         |某天详细记录     |
+|POST  |/api/goal/create                     |创建目标       |
+|GET   |/api/goal/list                       |目标列表       |
+|PUT   |/api/goal/{id}/complete              |切换完成状态     |
+|DELETE|/api/goal/{id}                       |删除目标       |
+
+-----
+
+## 七、关键 VO/DTO 定义
+
+```java
+// 打卡请求 DTO
+public class ExerciseRecordDTO {
+    @NotNull private Long userId;
+    @NotNull private String type;     // 有氧运动 / 力量训练 / 功能性训练
+    @NotNull private LocalDate date;
+    @Min(1)  private Integer duration;
+    private Integer calories;
+    private Integer avgHeartRate;
+    private String note;
+}
+
+// 统计响应 VO
+public class StatsVO {
+    private Integer count;       // 运动次数
+    private Integer totalDuration; // 总时长（分钟）
+    private Integer totalCalories; // 总卡路里
+}
+
+// 目标 DTO
+public class GoalDTO {
+    @NotNull private Long userId;
+    @NotNull private String period;   // 每日 / 每周 / 每月
+    private Integer targetDays;
+    private Integer targetDuration;
+    private Integer targetCalories;
+}
+```
+
+-----
+
+## 八、交互细节与错误处理
+
+1. **表单校验**：运动类型必选，日期必填，时长必填且 > 0；提交前前端校验，后端同步校验
+1. **空状态**：所有列表页面在无数据时显示引导性空状态（图标 + 文字 + 操作按钮）
+1. **Loading 状态**：所有 API 请求期间显示 Element Plus Loading 遮罩
+1. **错误提示**：网络异常或后端返回非 200 时，使用 ElMessage.error 提示
+1. **操作反馈**：打卡成功、目标创建成功均弹出 ElMessage.success；删除操作弹出 ElMessageBox.confirm 二次确认
+1. **日历月份切换**：切换时重新请求当月有记录日期，清空右侧详情面板
+
+-----
+
+## 九、扩展与注意事项
+
+- 当前系统默认 userId = 1（单用户演示），后续可接入 JWT 登录体系
+- 运动类型枚举若后续扩展，建议改为字典表而非 ENUM 字段
+- 日历性能优化：前端缓存当前月已加载的打点数据，避免重复请求
+- 移动端适配：导航栏在小屏下可折叠为汉堡菜单（可选）
