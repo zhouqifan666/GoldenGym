@@ -39,13 +39,17 @@
 
       <div v-else>
         <ExerciseCard v-for="record in records" :key="record.id" :record="record" />
+        <div ref="sentinelRef" class="load-sentinel">
+          <span v-if="loadingMore" class="loading-spinner"></span>
+          <span v-else-if="!hasMore" class="load-end">已加载全部记录</span>
+        </div>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { getWeekStats, getMonthStats, getRecords } from '../api/exercise'
 import { listGoals } from '../api/goal'
 import { useExerciseStore } from '../stores/exercise'
@@ -57,6 +61,13 @@ const weekStats = ref({ count: 0, totalDuration: 0, totalCalories: 0 })
 const monthStats = ref({ count: 0, totalDuration: 0, totalCalories: 0 })
 const activeGoals = ref(0)
 const records = ref([])
+
+const page = ref(1)
+const pageSize = 10
+const hasMore = ref(false)
+const loadingMore = ref(false)
+const sentinelRef = ref(null)
+let observer = null
 
 const statCards = computed(() => [
   {
@@ -82,24 +93,58 @@ const statCards = computed(() => [
   }
 ])
 
+async function loadMore() {
+  if (!hasMore.value || loadingMore.value) return
+  loadingMore.value = true
+  try {
+    page.value++
+    const res = await getRecords({ userId: store.userId, page: page.value, size: pageSize })
+    records.value.push(...res.data.records)
+    hasMore.value = records.value.length < res.data.total
+  } catch (e) {
+    page.value--
+    console.error(e)
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+function setupObserver() {
+  if (observer) observer.disconnect()
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && hasMore.value && !loadingMore.value) {
+      loadMore()
+    }
+  }, { threshold: 0 })
+  nextTick(() => {
+    if (sentinelRef.value) observer.observe(sentinelRef.value)
+  })
+}
+
 async function loadData() {
   try {
     const [weekRes, monthRes, recordsRes, goalsRes] = await Promise.all([
       getWeekStats(store.userId),
       getMonthStats(store.userId),
-      getRecords({ userId: store.userId, page: 1, size: 5 }),
+      getRecords({ userId: store.userId, page: 1, size: pageSize }),
       listGoals(store.userId)
     ])
     weekStats.value = weekRes.data
     monthStats.value = monthRes.data
     records.value = recordsRes.data.records
+    hasMore.value = records.value.length < recordsRes.data.total
     activeGoals.value = goalsRes.data.filter(g => !g.completed).length
+    setupObserver()
   } catch (e) {
     console.error(e)
   }
 }
 
 onMounted(loadData)
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
+})
 </script>
 
 <style scoped>
@@ -298,5 +343,29 @@ onMounted(loadData)
 
 .empty-cta:hover {
   background: var(--accent-bright);
+}
+
+.load-sentinel {
+  text-align: center;
+  padding: 24px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-medium);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.load-end {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
