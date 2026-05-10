@@ -217,12 +217,18 @@ function nextMonth() {
   loadRecordDates()
 }
 
-function goToday() {
+async function goToday() {
   currentYear.value = today.getFullYear()
   currentMonth.value = today.getMonth() + 1
-  selectedDate.value = ''
-  dayRecords.value = []
-  loadRecordDates()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  selectedDate.value = todayStr
+  await loadRecordDates()
+  try {
+    const res = await getRecordsByDate(todayStr, store.userId)
+    dayRecords.value = res.data
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 onMounted(loadRecordDates)
@@ -374,6 +380,7 @@ onMounted(loadRecordDates)
 
 .day-cell.today {
   background: var(--accent-glow);
+  box-shadow: 0 0 0 2px var(--accent-dim), 0 2px 8px var(--accent-glow-strong);
 }
 
 .day-cell.today .day-number {
@@ -386,13 +393,33 @@ onMounted(loadRecordDates)
 }
 
 .day-cell.selected {
-  background: var(--accent-glow);
-  border: 1px solid var(--accent-dim);
+  background: var(--info-glow);
+  border: 1px solid var(--info);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3), 0 2px 8px rgba(99, 102, 241, 0.15);
 }
 
 .day-cell.selected .day-number {
-  color: var(--accent);
+  color: var(--info);
   font-weight: 700;
+}
+
+/* Priority: today > selected > has-record */
+.day-cell.today.has-record {
+  background: var(--accent-glow);
+}
+
+.day-cell.today.selected {
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+  box-shadow: 0 0 0 2px var(--accent-dim), 0 2px 8px var(--accent-glow-strong);
+}
+
+.day-cell.today.selected .day-number {
+  color: var(--accent);
+}
+
+.day-cell.selected.has-record {
+  background: var(--info-glow);
 }
 
 .day-cell.weekend .day-number {
@@ -438,8 +465,8 @@ onMounted(loadRecordDates)
 }
 
 .selected-swatch {
-  background: var(--accent-glow);
-  border: 1px solid var(--accent);
+  background: var(--info-glow);
+  border: 1px solid var(--info);
 }
 
 .detail-panel {
