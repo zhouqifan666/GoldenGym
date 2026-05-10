@@ -1,30 +1,30 @@
 <template>
   <div class="goals-page">
-    <div class="page-header">
+    <header class="page-header animate-in">
       <div>
         <h1 class="page-title">我的目标</h1>
         <p class="page-subtitle">设定目标，坚持打卡</p>
       </div>
-      <el-button type="warning" @click="showDialog = true">
-        <el-icon><Plus /></el-icon>
-        创建目标
-      </el-button>
-    </div>
+      <button class="create-btn" @click="showDialog = true">
+        <span>+</span> 创建目标
+      </button>
+    </header>
 
-    <div v-if="goals.length === 0" class="empty-state">
-      <el-icon :size="64" color="#ddd"><Aim /></el-icon>
+    <div v-if="goals.length === 0" class="empty-state animate-in" style="animation-delay: 0.15s">
+      <div class="empty-icon">◎</div>
       <p class="empty-text">还没有设置目标</p>
-      <el-button type="warning" @click="showDialog = true">创建第一个目标</el-button>
+      <p class="empty-sub">设定你的第一个健身目标</p>
+      <button class="empty-cta" @click="showDialog = true">创建目标</button>
     </div>
 
     <div v-else class="goals-grid">
-      <GoalCard
-        v-for="goal in goals"
-        :key="goal.id"
-        :goal="goal"
-        @toggle="handleToggle"
-        @delete="handleDelete"
-      />
+      <div v-for="(goal, i) in goals" :key="goal.id" class="animate-in" :style="{ animationDelay: (i * 0.06 + 0.1) + 's' }">
+        <GoalCard
+          :goal="goal"
+          @toggle="handleToggle"
+          @delete="handleDelete"
+        />
+      </div>
     </div>
 
     <el-dialog v-model="showDialog" title="创建目标" width="460px" :close-on-click-modal="false">
@@ -41,17 +41,18 @@
         </el-form-item>
         <el-form-item label="目标时长">
           <el-input-number v-model="goalForm.targetDuration" :min="1" placeholder="例如：150分钟" style="width: 100%" />
-          <span class="unit">分钟</span>
+          <span class="unit-label">分钟</span>
         </el-form-item>
         <el-form-item label="目标卡路里">
           <el-input-number v-model="goalForm.targetCalories" :min="1" placeholder="例如：1000卡" style="width: 100%" />
-          <span class="unit">kcal</span>
+          <span class="unit-label">kcal</span>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="warning" @click="handleCreateGoal" :loading="creating" style="width: 100%">
-          创建目标
-        </el-button>
+        <button class="dialog-submit" @click="handleCreateGoal" :disabled="creating">
+          <span v-if="creating" class="btn-spinner"></span>
+          <span v-else>创建目标</span>
+        </button>
       </template>
     </el-dialog>
   </div>
@@ -144,48 +145,152 @@ onMounted(loadGoals)
 .goals-page {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
 }
 
 .page-subtitle {
   font-size: 14px;
-  color: #999;
-  margin-top: 4px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.create-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px var(--accent-glow-strong);
+}
+
+.create-btn:hover {
+  background: var(--accent-bright);
+  transform: translateY(-1px);
+}
+
+.create-btn span {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .empty-state {
   text-align: center;
-  padding: 60px 0;
-  background: #fff;
-  border-radius: 12px;
+  padding: 60px 24px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-lg);
+}
+
+.empty-icon {
+  font-size: 40px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  opacity: 0.4;
 }
 
 .empty-text {
-  color: #999;
-  margin: 16px 0;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.empty-sub {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.empty-cta:hover {
+  background: var(--accent-bright);
 }
 
 .goals-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
-.unit {
+.unit-label {
   margin-left: 8px;
-  color: #999;
+  color: var(--text-muted);
   font-size: 13px;
+}
+
+.dialog-submit {
+  width: 100%;
+  padding: 12px 24px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.dialog-submit:hover:not(:disabled) {
+  background: var(--accent-bright);
+}
+
+.dialog-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

@@ -1,18 +1,25 @@
 <template>
   <div class="calendar-page">
-    <h1 class="page-title">运动日历</h1>
+    <header class="page-header animate-in">
+      <h1 class="page-title">运动日历</h1>
+      <p class="page-subtitle">按日期查看你的训练记录</p>
+    </header>
 
     <div class="calendar-layout">
-      <div class="calendar-main">
-        <div class="calendar-header">
-          <el-button circle @click="prevMonth" type="warning" plain>
-            <el-icon><ArrowLeft /></el-icon>
-          </el-button>
-          <span class="calendar-title">{{ currentYear }}年{{ currentMonth }}月</span>
-          <el-button circle @click="nextMonth" type="warning" plain>
-            <el-icon><ArrowRight /></el-icon>
-          </el-button>
-          <el-button type="warning" size="small" @click="goToday" style="margin-left: 12px">今天</el-button>
+      <div class="calendar-main animate-in" style="animation-delay: 0.1s">
+        <div class="calendar-nav">
+          <button class="nav-arrow" @click="prevMonth">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <span class="calendar-month">{{ currentYear }}年{{ currentMonth }}月</span>
+          <button class="nav-arrow" @click="nextMonth">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+          <button class="today-btn" @click="goToday">今天</button>
         </div>
 
         <div class="calendar-grid">
@@ -31,33 +38,34 @@
             @click="selectDate(day)"
           >
             <span class="day-number">{{ day.day }}</span>
+            <span v-if="day.hasRecord" class="record-dot"></span>
           </div>
         </div>
 
         <div class="legend">
           <div class="legend-item">
-            <span class="legend-box today-legend"></span>
+            <span class="legend-swatch today-swatch"></span>
             <span>今天</span>
           </div>
           <div class="legend-item">
-            <span class="legend-box record-legend"></span>
+            <span class="legend-swatch record-swatch"></span>
             <span>有运动记录</span>
           </div>
           <div class="legend-item">
-            <span class="legend-box selected-legend"></span>
+            <span class="legend-swatch selected-swatch"></span>
             <span>选中日期</span>
           </div>
         </div>
       </div>
 
-      <div class="detail-panel">
+      <div class="detail-panel animate-in" style="animation-delay: 0.2s">
         <div class="detail-header">
-          <el-icon><Calendar /></el-icon>
-          <span>{{ selectedDate || '选择日期' }}</span>
+          <span class="detail-icon">▦</span>
+          <span class="detail-date">{{ selectedDate || '选择日期' }}</span>
         </div>
 
         <div v-if="!selectedDate" class="detail-empty">
-          <el-icon :size="48" color="#ddd"><Calendar /></el-icon>
+          <div class="detail-empty-icon">▦</div>
           <p>点击日历选择日期</p>
         </div>
 
@@ -67,10 +75,16 @@
 
         <div v-else class="detail-list">
           <div v-for="record in dayRecords" :key="record.id" class="detail-record">
-            <el-tag :type="getTagType(record.type)" effect="dark" size="small">{{ record.type }}</el-tag>
-            <div class="record-info">
-              <span>{{ record.duration }}分钟</span>
-              <span v-if="record.calories">{{ record.calories }}kcal</span>
+            <div class="detail-badge" :class="getTypeClass(record.type)">{{ record.type }}</div>
+            <div class="detail-metrics">
+              <span class="detail-metric">
+                <span class="dm-icon">◷</span>
+                {{ record.duration }}分钟
+              </span>
+              <span class="detail-metric" v-if="record.calories">
+                <span class="dm-icon">◈</span>
+                {{ record.calories }}kcal
+              </span>
             </div>
           </div>
         </div>
@@ -94,9 +108,9 @@ const selectedDate = ref('')
 const recordDates = ref([])
 const dayRecords = ref([])
 
-function getTagType(type) {
-  const types = { '有氧运动': 'success', '力量训练': 'warning', '功能性训练': 'danger' }
-  return types[type] || 'info'
+function getTypeClass(type) {
+  const classes = { '有氧运动': 'type-green', '力量训练': 'type-amber', '功能性训练': 'type-red' }
+  return classes[type] || 'type-default'
 }
 
 const calendarDays = computed(() => {
@@ -110,21 +124,12 @@ const calendarDays = computed(() => {
 
   const days = []
 
-  // Previous month days
   const prevMonthLast = new Date(year, month - 1, 0)
   for (let i = startWeekday - 1; i > 0; i--) {
     const d = prevMonthLast.getDate() - i + 1
-    days.push({
-      day: d,
-      otherMonth: true,
-      isToday: false,
-      hasRecord: false,
-      isWeekend: false,
-      dateStr: ''
-    })
+    days.push({ day: d, otherMonth: true, isToday: false, hasRecord: false, isWeekend: false, dateStr: '' })
   }
 
-  // Current month days
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   for (let d = 1; d <= lastDay.getDate(); d++) {
@@ -140,17 +145,9 @@ const calendarDays = computed(() => {
     })
   }
 
-  // Next month days
   const remaining = 42 - days.length
   for (let d = 1; d <= remaining; d++) {
-    days.push({
-      day: d,
-      otherMonth: true,
-      isToday: false,
-      hasRecord: false,
-      isWeekend: false,
-      dateStr: ''
-    })
+    days.push({ day: d, otherMonth: true, isToday: false, hasRecord: false, isWeekend: false, dateStr: '' })
   }
 
   return days
@@ -215,40 +212,95 @@ onMounted(loadRecordDates)
 .calendar-page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px;
+}
+
+.page-header {
+  margin-bottom: 28px;
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 24px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 6px;
 }
 
 .calendar-layout {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 24px;
+  gap: 16px;
 }
 
 .calendar-main {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-.calendar-header {
+.calendar-nav {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
-.calendar-title {
-  font-size: 18px;
-  font-weight: 600;
-  min-width: 120px;
+.nav-arrow {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.nav-arrow:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.calendar-month {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 100px;
   text-align: center;
+  letter-spacing: -0.3px;
+}
+
+.today-btn {
+  margin-left: auto;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.today-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
 }
 
 .calendar-grid {
@@ -259,54 +311,75 @@ onMounted(loadRecordDates)
 
 .weekday {
   text-align: center;
-  font-size: 13px;
-  color: #999;
-  padding: 8px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .day-cell {
   aspect-ratio: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
   position: relative;
+  gap: 3px;
 }
 
 .day-cell:hover {
-  background: #f5f5f5;
+  background: var(--bg-card-hover);
 }
 
 .day-number {
+  font-family: var(--font-display);
   font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .day-cell.other-month .day-number {
-  color: #ccc;
+  color: var(--text-muted);
+  opacity: 0.4;
 }
 
 .day-cell.today {
-  border: 2px solid #F4672A;
+  background: var(--accent-glow);
 }
 
 .day-cell.today .day-number {
-  color: #F4672A;
-  font-weight: 600;
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .day-cell.has-record {
-  background: #e8f5e9;
+  background: rgba(16, 185, 129, 0.06);
 }
 
 .day-cell.selected {
-  border: 2px solid #F4672A;
-  background: #fff3e0;
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+}
+
+.day-cell.selected .day-number {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .day-cell.weekend .day-number {
-  color: #409EFF;
+  color: var(--info);
+}
+
+.record-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--success);
 }
 
 .legend {
@@ -320,70 +393,132 @@ onMounted(loadRecordDates)
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  color: #999;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
-.legend-box {
-  width: 16px;
-  height: 16px;
+.legend-swatch {
+  width: 14px;
+  height: 14px;
   border-radius: 4px;
 }
 
-.today-legend {
-  border: 2px solid #F4672A;
+.today-swatch {
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
 }
 
-.record-legend {
-  background: #e8f5e9;
+.record-swatch {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.selected-legend {
-  border: 2px solid #F4672A;
-  background: #fff3e0;
+.selected-swatch {
+  background: var(--accent-glow);
+  border: 1px solid var(--accent);
 }
 
 .detail-panel {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   height: fit-content;
+  position: sticky;
+  top: 80px;
 }
 
 .detail-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
+  gap: 10px;
   margin-bottom: 20px;
-  color: #333;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.detail-icon {
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.detail-date {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .detail-empty {
   text-align: center;
   padding: 40px 0;
-  color: #999;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.detail-empty-icon {
+  font-size: 32px;
+  opacity: 0.3;
+  margin-bottom: 12px;
 }
 
 .detail-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .detail-record {
-  padding: 12px;
-  background: #f9f9f9;
-  border-radius: 8px;
+  padding: 14px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
 }
 
-.record-info {
+.detail-badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.type-green {
+  background: var(--success-glow);
+  color: var(--success);
+}
+
+.type-amber {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.type-red {
+  background: var(--danger-glow);
+  color: var(--danger);
+}
+
+.type-default {
+  background: var(--info-glow);
+  color: var(--info);
+}
+
+.detail-metrics {
   display: flex;
   gap: 16px;
-  margin-top: 8px;
+}
+
+.detail-metric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
+}
+
+.dm-icon {
+  font-size: 10px;
+  color: var(--text-muted);
 }
 </style>

@@ -1,0 +1,1 @@
+import{r as e}from"./exercise-Bfqu_zT8.js";function a(t){return e.post("/goal/create",t)}function r(t){return e.get("/goal/list",{params:{userId:t}})}function l(t){return e.put(`/goal/${t}/complete`)}function n(t){return e.delete(`/goal/${t}`)}export{a as c,n as d,r as l,l as t};

@@ -1,35 +1,26 @@
 <template>
   <div class="history-page">
-    <h1 class="page-title">运动历史</h1>
+    <header class="page-header animate-in">
+      <h1 class="page-title">运动历史</h1>
+      <p class="page-subtitle">回顾你的训练轨迹</p>
+    </header>
 
     <div class="stats-row">
-      <StatCard
-        title="总运动次数"
-        :value="totalStats.count"
-        subtitle="累计打卡"
-        icon="TrendCharts"
-        color="#F4672A"
-      />
-      <StatCard
-        title="总运动时长"
-        :value="totalStats.totalDuration"
-        subtitle="分钟"
-        icon="Timer"
-        color="#67C23A"
-      />
-      <StatCard
-        title="总消耗卡路里"
-        :value="totalStats.totalCalories"
-        subtitle="kcal"
-        icon="Flame"
-        color="#67C23A"
-      />
+      <div v-for="(s, i) in statCards" :key="s.title" class="animate-in" :style="{ animationDelay: (i * 0.08 + 0.1) + 's' }">
+        <StatCard
+          :title="s.title"
+          :value="s.value"
+          :subtitle="s.subtitle"
+          :icon="s.icon"
+          :color="s.color"
+        />
+      </div>
     </div>
 
-    <div class="section">
+    <section class="records-section animate-in" style="animation-delay: 0.35s">
       <div class="section-header">
-        <h2>运动记录</h2>
-        <el-select v-model="filterType" placeholder="全部类型" clearable style="width: 150px" @change="loadRecords">
+        <h2 class="section-title">运动记录</h2>
+        <el-select v-model="filterType" placeholder="全部类型" clearable style="width: 140px" @change="loadRecords">
           <el-option label="有氧运动" value="有氧运动" />
           <el-option label="力量训练" value="力量训练" />
           <el-option label="功能性训练" value="功能性训练" />
@@ -37,9 +28,10 @@
       </div>
 
       <div v-if="records.length === 0" class="empty-state">
-        <el-icon :size="64" color="#ddd"><TrendCharts /></el-icon>
+        <div class="empty-icon">◈</div>
         <p class="empty-text">还没有运动记录</p>
-        <el-button type="warning" @click="$router.push('/quick-check')">开始第一次打卡</el-button>
+        <p class="empty-sub">开始你的健身之旅</p>
+        <button class="empty-cta" @click="$router.push('/quick-check')">开始打卡</button>
       </div>
 
       <div v-else>
@@ -50,7 +42,7 @@
           :show-delete="true"
           @delete="handleDelete"
         />
-        <div class="pagination">
+        <div class="pagination-wrap">
           <el-pagination
             v-model:current-page="page"
             :page-size="pageSize"
@@ -60,12 +52,12 @@
           />
         </div>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { getRecords, getTotalStats, deleteRecord } from '../api/exercise'
 import { useExerciseStore } from '../stores/exercise'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -79,6 +71,30 @@ const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const filterType = ref('')
+
+const statCards = computed(() => [
+  {
+    title: '总运动次数',
+    value: totalStats.value.count,
+    subtitle: '累计打卡',
+    icon: 'TrendCharts',
+    color: '#f59e0b'
+  },
+  {
+    title: '总运动时长',
+    value: totalStats.value.totalDuration,
+    subtitle: '分钟',
+    icon: 'Timer',
+    color: '#10b981'
+  },
+  {
+    title: '总消耗卡路里',
+    value: totalStats.value.totalCalories,
+    subtitle: 'kcal',
+    icon: 'Flame',
+    color: '#ef4444'
+  }
+])
 
 async function loadStats() {
   try {
@@ -130,20 +146,32 @@ onMounted(() => {
 .history-page {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px;
+}
+
+.page-header {
+  margin-bottom: 28px;
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 24px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 6px;
 }
 
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 14px;
+  margin-bottom: 28px;
 }
 
 .section-header {
@@ -153,24 +181,64 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.section-header h2 {
+.section-title {
+  font-family: var(--font-display);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .empty-state {
   text-align: center;
-  padding: 60px 0;
-  background: #fff;
-  border-radius: 12px;
+  padding: 60px 24px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-lg);
+}
+
+.empty-icon {
+  font-size: 40px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  opacity: 0.4;
 }
 
 .empty-text {
-  color: #999;
-  margin: 16px 0;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
-.pagination {
+.empty-sub {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.empty-cta:hover {
+  background: var(--accent-bright);
+}
+
+.pagination-wrap {
   display: flex;
   justify-content: center;
   margin-top: 20px;

@@ -4,11 +4,11 @@
       <div class="navbar-left">
         <div class="logo">
           <div class="logo-icon">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="white">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
           </div>
-          <span class="logo-text">健身打卡助手</span>
+          <span class="logo-text">Golden<span class="logo-accent">GYM</span></span>
         </div>
       </div>
       <div class="navbar-center">
@@ -19,20 +19,22 @@
           class="nav-item"
           :class="{ active: $route.path === item.path }"
         >
-          {{ item.label }}
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="nav-label">{{ item.label }}</span>
         </router-link>
       </div>
     </div>
+    <div class="navbar-glow"></div>
   </nav>
 </template>
 
 <script setup>
 const navItems = [
-  { path: '/', label: '首页' },
-  { path: '/quick-check', label: '快速打卡' },
-  { path: '/history', label: '运动历史' },
-  { path: '/goals', label: '我的目标' },
-  { path: '/calendar', label: '运动日历' }
+  { path: '/', label: '首页', icon: '◆' },
+  { path: '/quick-check', label: '打卡', icon: '⚡' },
+  { path: '/history', label: '历史', icon: '◈' },
+  { path: '/goals', label: '目标', icon: '◎' },
+  { path: '/calendar', label: '日历', icon: '▦' }
 ]
 </script>
 
@@ -42,16 +44,28 @@ const navItems = [
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  height: 64px;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--border-subtle);
   z-index: 1000;
 }
 
+.navbar-glow {
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-glow-strong), transparent);
+}
+
 .navbar-inner {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 28px;
   height: 100%;
   display: flex;
   align-items: center;
@@ -66,46 +80,74 @@ const navItems = [
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
-  background: #F4672A;
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #000;
+  box-shadow: 0 2px 12px var(--accent-glow-strong);
 }
 
 .logo-text {
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: 20px;
   font-weight: 700;
-  color: #67C23A;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.logo-accent {
+  color: var(--accent);
 }
 
 .navbar-center {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
+  background: var(--bg-card);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  border: 1px solid var(--border-subtle);
 }
 
 .nav-item {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .nav-item:hover {
-  color: #F4672A;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .nav-item.active {
-  background: #F4672A;
-  color: #fff;
+  background: var(--accent);
+  color: #000;
+  box-shadow: 0 2px 8px var(--accent-glow-strong);
+}
+
+.nav-icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.nav-label {
+  letter-spacing: 0.3px;
 }
 </style>
