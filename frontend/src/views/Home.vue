@@ -57,8 +57,8 @@ import StatCard from '../components/StatCard.vue'
 import ExerciseCard from '../components/ExerciseCard.vue'
 
 const store = useExerciseStore()
-const weekStats = ref({ count: 0, totalDuration: 0, totalCalories: 0 })
-const monthStats = ref({ count: 0, totalDuration: 0, totalCalories: 0 })
+const weekStats = ref({ count: 0, days: 0, totalDuration: 0, totalCalories: 0 })
+const monthStats = ref({ count: 0, days: 0, totalDuration: 0, totalCalories: 0 })
 const activeGoals = ref(0)
 const records = ref([])
 
@@ -72,15 +72,15 @@ let observer = null
 const statCards = computed(() => [
   {
     title: '本周运动',
-    value: weekStats.value.count,
-    subtitle: `${weekStats.value.totalDuration}分钟 | ${weekStats.value.totalCalories}kcal`,
+    value: weekStats.value.days + '天',
+    subtitle: `${weekStats.value.count}次 | ${weekStats.value.totalDuration}分钟 | ${weekStats.value.totalCalories}kcal`,
     icon: 'Calendar',
     color: '#f59e0b'
   },
   {
     title: '本月运动',
-    value: monthStats.value.count,
-    subtitle: `${monthStats.value.totalDuration}分钟 | ${monthStats.value.totalCalories}kcal`,
+    value: monthStats.value.days + '天',
+    subtitle: `${monthStats.value.count}次 | ${monthStats.value.totalDuration}分钟 | ${monthStats.value.totalCalories}kcal`,
     icon: 'TrendCharts',
     color: '#10b981'
   },
