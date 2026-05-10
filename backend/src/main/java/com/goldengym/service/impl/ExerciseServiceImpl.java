@@ -116,4 +116,16 @@ public class ExerciseServiceImpl implements ExerciseService {
         exerciseRecordMapper.deleteById(id);
         return Result.success();
     }
+
+    @Override
+    public Result<Void> updateRecord(Long id, ExerciseRecordDTO dto) {
+        ExerciseRecord record = exerciseRecordMapper.selectById(id);
+        if (record == null) {
+            return Result.error("记录不存在");
+        }
+        BeanUtils.copyProperties(dto, record);
+        record.setId(id);
+        exerciseRecordMapper.updateById(record);
+        return Result.success();
+    }
 }

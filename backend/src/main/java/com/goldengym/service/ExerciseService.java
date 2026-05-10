@@ -17,4 +17,5 @@ public interface ExerciseService {
     Result<List<String>> getCalendarDates(Long userId, int year, int month);
     Result<List<ExerciseRecordVO>> getRecordsByDate(Long userId, String date);
     Result<Void> deleteRecord(Long id);
+    Result<Void> updateRecord(Long id, ExerciseRecordDTO dto);
 }

@@ -14,6 +14,7 @@
 - [x] 前端组件：Navbar / StatCard / ExerciseCard / GoalCard
 - [x] Axios 封装 + 统一错误提示
 - [x] Code Review：修复 MyBatis 类型别名 / 异常信息泄露 / 未使用导入 / SQL 索引
+- [x] 首页最近运动卡片鼠标悬浮展示 note 备注字段（el-tooltip）
 
 ## 待完成
 

@@ -1,39 +1,46 @@
 <template>
-  <div class="exercise-card">
-    <div class="card-stripe" :style="{ background: accentColor }"></div>
-    <div class="card-body">
-      <div class="card-left">
-        <div class="type-badge" :style="{ background: accentGlow, color: accentColor }">
-          {{ record.type }}
+  <el-tooltip :content="record.note" placement="top" :disabled="!record.note" :show-after="300" effect="dark">
+    <div class="exercise-card">
+      <div class="card-stripe" :style="{ background: accentColor }"></div>
+      <div class="card-body">
+        <div class="card-left">
+          <div class="type-badge" :style="{ background: accentGlow, color: accentColor }">
+            {{ record.type }}
+          </div>
+          <div class="card-date">{{ record.date }}</div>
         </div>
-        <div class="card-date">{{ record.date }}</div>
-      </div>
-      <div class="card-center">
-        <div class="metric">
-          <span class="metric-icon">◷</span>
-          <span class="metric-value">{{ record.duration }}</span>
-          <span class="metric-unit">分钟</span>
+        <div class="card-center">
+          <div class="metric">
+            <span class="metric-icon">◷</span>
+            <span class="metric-value">{{ record.duration }}</span>
+            <span class="metric-unit">分钟</span>
+          </div>
+          <div class="metric" v-if="record.calories">
+            <span class="metric-icon">◈</span>
+            <span class="metric-value">{{ record.calories }}</span>
+            <span class="metric-unit">kcal</span>
+          </div>
+          <div class="metric" v-if="record.avgHeartRate">
+            <span class="metric-icon">♡</span>
+            <span class="metric-value">{{ record.avgHeartRate }}</span>
+            <span class="metric-unit">bpm</span>
+          </div>
         </div>
-        <div class="metric" v-if="record.calories">
-          <span class="metric-icon">◈</span>
-          <span class="metric-value">{{ record.calories }}</span>
-          <span class="metric-unit">kcal</span>
+        <div class="card-right" v-if="showDelete">
+          <button class="action-btn edit-btn" @click="$emit('edit', record)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button class="action-btn delete-btn" @click="$emit('delete', record.id)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
         </div>
-        <div class="metric" v-if="record.avgHeartRate">
-          <span class="metric-icon">♡</span>
-          <span class="metric-value">{{ record.avgHeartRate }}</span>
-          <span class="metric-unit">bpm</span>
-        </div>
-      </div>
-      <div class="card-right" v-if="showDelete">
-        <button class="delete-btn" @click="$emit('delete', record.id)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          </svg>
-        </button>
       </div>
     </div>
-  </div>
+  </el-tooltip>
 </template>
 
 <script setup>
@@ -47,7 +54,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['delete'])
+defineEmits(['delete', 'edit'])
 
 const colorMap = {
   '有氧运动': { color: '#10b981', glow: 'rgba(16, 185, 129, 0.12)' },
@@ -149,7 +156,12 @@ const accentGlow = computed(() => colorMap[props.record.type]?.glow || 'rgba(99,
   font-weight: 400;
 }
 
-.delete-btn {
+.card-right {
+  display: flex;
+  gap: 4px;
+}
+
+.action-btn {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-sm);
@@ -161,6 +173,12 @@ const accentGlow = computed(() => colorMap[props.record.type]?.glow || 'rgba(99,
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+}
+
+.edit-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.2);
+  color: #6366f1;
 }
 
 .delete-btn:hover {

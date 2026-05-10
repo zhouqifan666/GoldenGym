@@ -12,6 +12,10 @@ export function deleteRecord(id) {
   return request.delete(`/exercise/record/${id}`)
 }
 
+export function updateRecord(id, data) {
+  return request.put(`/exercise/record/${id}`, data)
+}
+
 export function getWeekStats(userId) {
   return request.get('/exercise/stats/week', { params: { userId } })
 }

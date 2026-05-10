@@ -38,6 +38,11 @@ public class ExerciseController {
         return exerciseService.deleteRecord(id);
     }
 
+    @PutMapping("/record/{id}")
+    public Result<Void> updateRecord(@PathVariable Long id, @Valid @RequestBody ExerciseRecordDTO dto) {
+        return exerciseService.updateRecord(id, dto);
+    }
+
     @GetMapping("/stats/week")
     public Result<StatsVO> getWeekStats(@RequestParam Long userId) {
         return exerciseService.getWeekStats(userId);

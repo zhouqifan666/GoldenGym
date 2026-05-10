@@ -41,6 +41,7 @@
           :record="record"
           :show-delete="true"
           @delete="handleDelete"
+          @edit="handleEdit"
         />
         <div class="pagination-wrap">
           <el-pagination
@@ -53,12 +54,52 @@
         </div>
       </div>
     </section>
+
+    <el-dialog v-model="editDialogVisible" title="修改运动记录" width="480px" :close-on-click-modal="false">
+      <el-form :model="editForm" label-width="90px" ref="editFormRef" :rules="editRules">
+        <el-form-item label="运动类型" prop="type">
+          <el-select v-model="editForm.type" placeholder="选择类型" style="width: 100%">
+            <el-option label="有氧运动" value="有氧运动" />
+            <el-option label="力量训练" value="力量训练" />
+            <el-option label="功能性训练" value="功能性训练" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="运动日期" prop="date">
+          <el-date-picker
+            v-model="editForm.date"
+            type="date"
+            placeholder="选择日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="运动时长" prop="duration">
+          <el-input-number v-model="editForm.duration" :min="1" style="width: 100%" />
+          <span class="unit-label">分钟</span>
+        </el-form-item>
+        <el-form-item label="消耗卡路里">
+          <el-input-number v-model="editForm.calories" :min="0" style="width: 100%" />
+          <span class="unit-label">kcal</span>
+        </el-form-item>
+        <el-form-item label="平均心率">
+          <el-input-number v-model="editForm.avgHeartRate" :min="0" style="width: 100%" />
+          <span class="unit-label">bpm</span>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="editForm.note" type="textarea" :rows="3" placeholder="记录训练感受..." />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleUpdate" :loading="editLoading">保存修改</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { getRecords, getTotalStats, deleteRecord } from '../api/exercise'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { getRecords, getTotalStats, deleteRecord, updateRecord } from '../api/exercise'
 import { useExerciseStore } from '../stores/exercise'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import StatCard from '../components/StatCard.vue'
@@ -71,6 +112,25 @@ const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const filterType = ref('')
+
+const editDialogVisible = ref(false)
+const editLoading = ref(false)
+const editFormRef = ref(null)
+const editingId = ref(null)
+const editForm = reactive({
+  type: '',
+  date: '',
+  duration: null,
+  calories: null,
+  avgHeartRate: null,
+  note: ''
+})
+
+const editRules = {
+  type: [{ required: true, message: '请选择运动类型', trigger: 'change' }],
+  date: [{ required: true, message: '请选择运动日期', trigger: 'change' }],
+  duration: [{ required: true, message: '请输入运动时长', trigger: 'blur' }]
+}
 
 const statCards = computed(() => [
   {
@@ -133,6 +193,41 @@ async function handleDelete(id) {
     loadStats()
   } catch (e) {
     if (e !== 'cancel') console.error(e)
+  }
+}
+
+function handleEdit(record) {
+  editingId.value = record.id
+  editForm.type = record.type
+  editForm.date = record.date
+  editForm.duration = record.duration
+  editForm.calories = record.calories
+  editForm.avgHeartRate = record.avgHeartRate
+  editForm.note = record.note || ''
+  editDialogVisible.value = true
+}
+
+async function handleUpdate() {
+  try {
+    await editFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  editLoading.value = true
+  try {
+    await updateRecord(editingId.value, {
+      userId: store.userId,
+      ...editForm
+    })
+    ElMessage.success('修改成功')
+    editDialogVisible.value = false
+    loadRecords()
+    loadStats()
+  } catch (e) {
+    console.error(e)
+  } finally {
+    editLoading.value = false
   }
 }
 
@@ -242,5 +337,11 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+.unit-label {
+  margin-left: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 </style>
