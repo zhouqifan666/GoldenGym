@@ -43,14 +43,9 @@
           @delete="handleDelete"
           @edit="handleEdit"
         />
-        <div class="pagination-wrap">
-          <el-pagination
-            v-model:current-page="page"
-            :page-size="pageSize"
-            :total="total"
-            layout="prev, pager, next"
-            @current-change="loadRecords"
-          />
+        <div ref="sentinelRef" class="load-sentinel">
+          <span v-if="loadingMore" class="loading-spinner"></span>
+          <span v-else-if="!hasMore" class="load-end">已加载全部记录</span>
         </div>
       </div>
     </section>
@@ -98,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { getRecords, getTotalStats, deleteRecord, updateRecord } from '../api/exercise'
 import { useExerciseStore } from '../stores/exercise'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -109,9 +104,13 @@ const store = useExerciseStore()
 const totalStats = ref({ count: 0, totalDuration: 0, totalCalories: 0 })
 const records = ref([])
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = 10
 const total = ref(0)
 const filterType = ref('')
+const hasMore = ref(false)
+const loadingMore = ref(false)
+const sentinelRef = ref(null)
+let observer = null
 
 const editDialogVisible = ref(false)
 const editLoading = ref(false)
@@ -165,16 +164,53 @@ async function loadStats() {
   }
 }
 
-async function loadRecords() {
+async function loadMore() {
+  if (!hasMore.value || loadingMore.value) return
+  loadingMore.value = true
   try {
+    page.value++
     const res = await getRecords({
       userId: store.userId,
       page: page.value,
-      size: pageSize.value,
+      size: pageSize,
+      type: filterType.value || undefined
+    })
+    records.value.push(...res.data.records)
+    total.value = res.data.total
+    hasMore.value = records.value.length < res.data.total
+  } catch (e) {
+    page.value--
+    console.error(e)
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+function setupObserver() {
+  if (observer) observer.disconnect()
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && hasMore.value && !loadingMore.value) {
+      loadMore()
+    }
+  }, { threshold: 0 })
+  nextTick(() => {
+    if (sentinelRef.value) observer.observe(sentinelRef.value)
+  })
+}
+
+async function loadRecords() {
+  page.value = 1
+  try {
+    const res = await getRecords({
+      userId: store.userId,
+      page: 1,
+      size: pageSize,
       type: filterType.value || undefined
     })
     records.value = res.data.records
     total.value = res.data.total
+    hasMore.value = records.value.length < res.data.total
+    setupObserver()
   } catch (e) {
     console.error(e)
   }
@@ -234,6 +270,10 @@ async function handleUpdate() {
 onMounted(() => {
   loadStats()
   loadRecords()
+})
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
 })
 </script>
 
@@ -333,10 +373,28 @@ onMounted(() => {
   background: var(--accent-bright);
 }
 
-.pagination-wrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
+.load-sentinel {
+  text-align: center;
+  padding: 24px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-medium);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.load-end {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .unit-label {

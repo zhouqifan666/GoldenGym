@@ -124,14 +124,19 @@ const calendarDays = computed(() => {
 
   const days = []
 
+  // 上月日期
   const prevMonthLast = new Date(year, month - 1, 0)
+  const prevMonth = month === 1 ? 12 : month - 1
+  const prevYear = month === 1 ? year - 1 : year
   for (let i = startWeekday - 1; i > 0; i--) {
     const d = prevMonthLast.getDate() - i + 1
-    days.push({ day: d, otherMonth: true, isToday: false, hasRecord: false, isWeekend: false, dateStr: '' })
+    const dateStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    days.push({ day: d, otherMonth: true, isToday: false, hasRecord: recordDates.value.includes(dateStr), isWeekend: false, dateStr })
   }
 
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
+  // 本月日期
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const dayOfWeek = new Date(year, month - 1, d).getDay()
@@ -145,9 +150,13 @@ const calendarDays = computed(() => {
     })
   }
 
+  // 下月日期
+  const nextMonth = month === 12 ? 1 : month + 1
+  const nextYear = month === 12 ? year + 1 : year
   const remaining = 42 - days.length
   for (let d = 1; d <= remaining; d++) {
-    days.push({ day: d, otherMonth: true, isToday: false, hasRecord: false, isWeekend: false, dateStr: '' })
+    const dateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    days.push({ day: d, otherMonth: true, isToday: false, hasRecord: recordDates.value.includes(dateStr), isWeekend: false, dateStr })
   }
 
   return days
@@ -155,15 +164,26 @@ const calendarDays = computed(() => {
 
 async function loadRecordDates() {
   try {
-    const res = await getCalendarDates(currentYear.value, currentMonth.value, store.userId)
-    recordDates.value = res.data
+    const year = currentYear.value
+    const month = currentMonth.value
+    const prevMonth = month === 1 ? 12 : month - 1
+    const prevYear = month === 1 ? year - 1 : year
+    const nextMonth = month === 12 ? 1 : month + 1
+    const nextYear = month === 12 ? year + 1 : year
+
+    const [prevRes, currRes, nextRes] = await Promise.all([
+      getCalendarDates(prevYear, prevMonth, store.userId),
+      getCalendarDates(year, month, store.userId),
+      getCalendarDates(nextYear, nextMonth, store.userId)
+    ])
+    recordDates.value = [...prevRes.data, ...currRes.data, ...nextRes.data]
   } catch (e) {
     console.error(e)
   }
 }
 
 async function selectDate(day) {
-  if (day.otherMonth || !day.dateStr) return
+  if (!day.dateStr) return
   selectedDate.value = day.dateStr
   try {
     const res = await getRecordsByDate(day.dateStr, store.userId)
@@ -346,6 +366,10 @@ onMounted(loadRecordDates)
 .day-cell.other-month .day-number {
   color: var(--text-muted);
   opacity: 0.4;
+}
+
+.day-cell.other-month:not(.has-record) {
+  background: transparent;
 }
 
 .day-cell.today {
