@@ -2,14 +2,14 @@
   <nav class="navbar">
     <div class="navbar-inner">
       <div class="navbar-left">
-        <div class="logo">
+        <router-link to="/" class="logo">
           <div class="logo-icon">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
           </div>
           <span class="logo-text">Golden<span class="logo-accent">GYM</span></span>
-        </div>
+        </router-link>
       </div>
       <div class="navbar-center">
         <router-link
@@ -81,6 +81,8 @@ const navItems = [
   display: flex;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .logo-icon {

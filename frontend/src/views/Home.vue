@@ -13,7 +13,7 @@
     </header>
 
     <div class="stats-row">
-      <div v-for="(s, i) in statCards" :key="s.title" class="animate-in" :style="{ animationDelay: (i * 0.08) + 's' }">
+      <div v-for="(s, i) in statCards" :key="s.title" class="animate-in" :class="{ 'clickable': s.route }" :style="{ animationDelay: (i * 0.08) + 's' }" @click="s.route && $router.push(s.route)">
         <StatCard
           :title="s.title"
           :value="s.value"
@@ -89,7 +89,8 @@ const statCards = computed(() => [
     value: activeGoals.value,
     subtitle: '未完成目标',
     icon: 'Aim',
-    color: '#6366f1'
+    color: '#6366f1',
+    route: '/goals'
   }
 ])
 
@@ -263,6 +264,19 @@ onUnmounted(() => {
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-bottom: 28px;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable :deep(.stat-card) {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.clickable :deep(.stat-card:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
 }
 
 .recent-section {
