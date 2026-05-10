@@ -1,10 +1,12 @@
 package com.goldengym.config;
 
 import com.goldengym.common.Result;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -19,7 +21,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
-        // 生产环境不暴露内部异常细节
+        log.error("服务器异常", e);
         return Result.fail(500, "服务器内部错误，请稍后重试");
     }
 }

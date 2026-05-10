@@ -121,10 +121,14 @@ public class ExerciseServiceImpl implements ExerciseService {
     public Result<Void> updateRecord(Long id, ExerciseRecordDTO dto) {
         ExerciseRecord record = exerciseRecordMapper.selectById(id);
         if (record == null) {
-            return Result.error("记录不存在");
+            return Result.fail("记录不存在");
         }
-        BeanUtils.copyProperties(dto, record);
-        record.setId(id);
+        if (dto.getType() != null) record.setType(dto.getType());
+        if (dto.getDate() != null) record.setDate(dto.getDate());
+        if (dto.getDuration() != null) record.setDuration(dto.getDuration());
+        if (dto.getCalories() != null) record.setCalories(dto.getCalories());
+        if (dto.getAvgHeartRate() != null) record.setAvgHeartRate(dto.getAvgHeartRate());
+        if (dto.getNote() != null) record.setNote(dto.getNote());
         exerciseRecordMapper.updateById(record);
         return Result.success();
     }
