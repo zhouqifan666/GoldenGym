@@ -8,7 +8,9 @@
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
           </div>
-          <span class="logo-text">Golden<span class="logo-accent">GYM</span></span>
+          <div class="logo-text-wrap">
+            <FuzzyText text="GoldenGYM" :fontSize="20" fontWeight="70" fontFamily="Outfit, sans-serif" :baseIntensity="0.15" :hoverIntensity="0.4" :fuzzRange="8" :enableHover="true" :letterSpacing="-0.5" :gradient="['#f0f0f5', '#f0f0f5', '#f59e0b', '#f59e0b']" />
+          </div>
         </router-link>
       </div>
       <div class="navbar-center">
@@ -29,6 +31,8 @@
 </template>
 
 <script setup>
+import FuzzyText from './FuzzyText.vue'
+
 const navItems = [
   { path: '/', label: '首页', icon: '◆' },
   { path: '/quick-check', label: '打卡', icon: '⚡' },
@@ -74,7 +78,7 @@ const navItems = [
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0;
   text-decoration: none;
   cursor: pointer;
 }
@@ -91,16 +95,17 @@ const navItems = [
   box-shadow: 0 2px 12px var(--accent-glow-strong);
 }
 
-.logo-text {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
+.logo-text-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  line-height: 1;
 }
 
-.logo-accent {
-  color: var(--accent);
+.logo-text-wrap canvas {
+  display: block;
+  height: 28px;
+  width: auto;
 }
 
 .navbar-center {
