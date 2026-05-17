@@ -1,6 +1,18 @@
 <template>
   <div id="app">
-    <div class="ambient-glow"></div>
+    <div class="light-rays-bg">
+      <LightRays
+        raysOrigin="top-center"
+        raysColor="#F4672A"
+        :raysSpeed="1.5"
+        :lightSpread="0.8"
+        :rayLength="1.2"
+        :followMouse="true"
+        :mouseInfluence="0.1"
+        :noiseAmount="0.1"
+        :distortion="0.05"
+      />
+    </div>
     <Navbar />
     <main class="main-content">
       <router-view v-slot="{ Component }">
@@ -14,6 +26,7 @@
 
 <script setup>
 import Navbar from './components/Navbar.vue'
+import LightRays from './components/LightRays.vue'
 </script>
 
 <style>
@@ -84,23 +97,14 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 100vh;
 }
 
-.ambient-glow {
+.light-rays-bg {
   position: fixed;
-  top: -200px;
-  right: -200px;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   pointer-events: none;
   z-index: 0;
-  animation: ambient-drift 20s ease-in-out infinite;
-}
-
-@keyframes ambient-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-  25% { transform: translate(-80px, 40px) scale(1.1); opacity: 0.6; }
-  50% { transform: translate(-40px, 80px) scale(0.95); opacity: 0.3; }
-  75% { transform: translate(40px, 20px) scale(1.05); opacity: 0.5; }
 }
 
 .main-content {
